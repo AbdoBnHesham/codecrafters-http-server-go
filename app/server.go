@@ -56,7 +56,7 @@ func newHttpConnection(conn net.Conn, req Request) HttpConnection {
 }
 
 func (hc *HttpConnection) Respond(status string) error {
-	response := []byte(fmt.Sprintf("%s %s \r\n\r\n", HTTP_VERSION, status))
+	response := []byte(fmt.Sprintf("%s %s\r\n\r\n", HTTP_VERSION, status))
 	_, err := hc.tcpConn.Write(response)
 	if err != nil {
 		return fmt.Errorf("error writing response: %v", err.Error())
