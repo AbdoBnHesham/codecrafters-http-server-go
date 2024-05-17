@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net"
+	"strings"
 )
 
 const (
@@ -12,6 +12,7 @@ const (
 	STATUS_OK                    = "200 OK"
 	STATUS_NOT_FOUND             = "404 Not Found"
 	STATUS_INTERNAL_SERVER_ERROR = "500 Internal Server Error"
+	CRLF                         = "\r\n"
 )
 
 type Request struct {
@@ -20,29 +21,28 @@ type Request struct {
 	Path    string
 }
 
-func parseRequest(reader io.Reader) (Request, error) {
+func ParseRequest(reader io.Reader) (Request, error) {
 	buffer := make([]byte, 1024)
 	_, err := reader.Read(buffer)
 	if err != nil {
 		return Request{}, fmt.Errorf("error reading response: %v", err.Error())
 	}
 
-	lines := bytes.Split(buffer, []byte("\r\n"))
+	request := string(buffer)
+	lines := strings.Split(request, CRLF)
 
 	// parse status line
-	sections := bytes.Split(lines[0], []byte(" "))
-	if len(sections) < 2 {
-		return Request{}, fmt.Errorf("error parsing status line: %s", sections)
+	requestLineParts := strings.Split(lines[0], " ")
+	if len(requestLineParts) < 2 {
+		return Request{}, fmt.Errorf("error parsing status line: %s", requestLineParts)
 	}
-	method := sections[0]
-	path := sections[1]
 
 	// TODO parse headers
 	// TODO parse body
 
 	return Request{
-		Method: string(method),
-		Path:   string(path),
+		Method: requestLineParts[0],
+		Path:   requestLineParts[1],
 	}, nil
 }
 
@@ -56,7 +56,7 @@ func newHttpConnection(conn net.Conn, req Request) HttpConnection {
 }
 
 func (hc *HttpConnection) Respond(status string) error {
-	response := []byte(fmt.Sprintf("%s %s\r\n\r\n", HTTP_VERSION, status))
+	response := []byte(fmt.Sprintf("%s %s %s%s", HTTP_VERSION, status, CRLF, CRLF))
 	_, err := hc.tcpConn.Write(response)
 	if err != nil {
 		return fmt.Errorf("error writing response: %v", err.Error())
@@ -89,7 +89,7 @@ func main() {
 		go func() {
 			defer conn.Close()
 
-			req, err := parseRequest(conn)
+			req, err := ParseRequest(conn)
 			if err != nil {
 				fmt.Printf("error parsing request: %v", err.Error())
 				return
