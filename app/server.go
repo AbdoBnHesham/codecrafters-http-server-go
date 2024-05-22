@@ -2,81 +2,18 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net"
-	"strings"
+	"regexp"
 )
-
-const (
-	HTTP_VERSION                 = "HTTP/1.1"
-	STATUS_OK                    = "200 OK"
-	STATUS_NOT_FOUND             = "404 Not Found"
-	STATUS_INTERNAL_SERVER_ERROR = "500 Internal Server Error"
-	CRLF                         = "\r\n"
-)
-
-type Request struct {
-	Headers map[string]string
-	Method  string
-	Path    string
-}
-
-func ParseRequest(reader io.Reader) (Request, error) {
-	buffer := make([]byte, 1024)
-	_, err := reader.Read(buffer)
-	if err != nil {
-		return Request{}, fmt.Errorf("error reading response: %v", err.Error())
-	}
-
-	request := string(buffer)
-	lines := strings.Split(request, CRLF)
-
-	// parse status line
-	requestLineParts := strings.Split(lines[0], " ")
-	if len(requestLineParts) < 2 {
-		return Request{}, fmt.Errorf("error parsing status line: %s", requestLineParts)
-	}
-
-	// TODO parse headers
-	// TODO parse body
-
-	return Request{
-		Method: requestLineParts[0],
-		Path:   requestLineParts[1],
-	}, nil
-}
-
-type HttpConnection struct {
-	tcpConn net.Conn
-	req     Request
-}
-
-func newHttpConnection(conn net.Conn, req Request) HttpConnection {
-	return HttpConnection{tcpConn: conn, req: req}
-}
-
-func (hc *HttpConnection) Respond(status string) error {
-	response := []byte(fmt.Sprintf("%s %s %s%s", HTTP_VERSION, status, CRLF, CRLF))
-	_, err := hc.tcpConn.Write(response)
-	if err != nil {
-		return fmt.Errorf("error writing response: %v", err.Error())
-	}
-	return nil
-}
-
-type RoutesMap map[string]func(HttpConnection) error
 
 func main() {
+	serve()
+}
+
+func serve() {
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		panic("Failed to bind to port 4221")
-	}
-
-	routesMap := RoutesMap{
-		"/": func(hc HttpConnection) error {
-			hc.Respond(STATUS_OK)
-			return nil
-		},
 	}
 
 	for {
@@ -96,19 +33,33 @@ func main() {
 			}
 
 			hc := newHttpConnection(conn, req)
-			handleRouting(hc, routesMap)
+			handleRouting(hc)
 		}()
 	}
 }
 
-func handleRouting(hc HttpConnection, routesMap RoutesMap) error {
-	if route := routesMap[hc.req.Path]; route != nil {
-		if err := route(hc); err != nil {
-			hc.Respond(STATUS_INTERNAL_SERVER_ERROR)
+func handleRouting(hc HttpConnection) {
+	// TODO: Refactor
+	method := hc.req.Method
+	path := hc.req.Path
+
+	if method == "GET" {
+
+		if path == "/" {
+			hc.Respond()
+			return
 		}
-	} else {
-		hc.Respond(STATUS_NOT_FOUND)
+
+		pattern := regexp.MustCompile(`/echo/([^/]+)`)
+		matches := pattern.FindStringSubmatch(path)
+		if len(matches) == 2 {
+			hc.res.Body = matches[1]
+			hc.Respond()
+			return
+		}
+
 	}
 
-	return nil
+	hc.res.Status = STATUS_NOT_FOUND
+	hc.Respond()
 }
