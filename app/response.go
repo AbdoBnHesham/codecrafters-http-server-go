@@ -25,7 +25,7 @@ func (r Response) ToBytes() []byte {
 
 	headers := ""
 	for k, v := range r.Headers {
-		h := fmt.Sprintf("%s%s%s", k, ":", v)
+		h := fmt.Sprintf("%s%s %s", k, ":", v)
 		headers = fmt.Sprintf("%s%s%s", headers, CRLF, h)
 	}
 
