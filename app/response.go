@@ -21,7 +21,7 @@ func newResponse() Response {
 }
 
 func (r Response) ToBytes() []byte {
-	statusLine := fmt.Sprintf("%s %s %s", HTTP_VERSION, r.Status, CRLF)
+	statusLine := fmt.Sprintf("%s %s%s", HTTP_VERSION, r.Status, CRLF)
 
 	headers := ""
 	for k, v := range r.Headers {
