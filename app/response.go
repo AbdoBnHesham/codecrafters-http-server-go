@@ -37,5 +37,10 @@ func (r Response) ToBytes() []byte {
 	if r.Body != "" {
 		body = fmt.Sprintf("%s%s", CRLF, r.Body)
 	}
+
+	if headers == "" && body == "" {
+		statusLine = fmt.Sprintf("%s%s", statusLine, CRLF)
+	}
+
 	return []byte(fmt.Sprintf("%s%s%s", statusLine, headers, body))
 }
