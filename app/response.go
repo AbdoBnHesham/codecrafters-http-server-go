@@ -28,12 +28,14 @@ func (r Response) ToBytes() []byte {
 		h := fmt.Sprintf("%s%s %s", k, ":", v)
 		headers = fmt.Sprintf("%s%s%s", headers, CRLF, h)
 	}
+	if headers == "" {
+		headers = fmt.Sprintf("%s%s", headers, CRLF)
+	}
 	headers = fmt.Sprintf("%s%s", headers, CRLF)
 
 	body := ""
 	if r.Body != "" {
 		body = fmt.Sprintf("%s%s", CRLF, r.Body)
 	}
-
 	return []byte(fmt.Sprintf("%s%s%s", statusLine, headers, body))
 }
