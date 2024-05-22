@@ -17,7 +17,7 @@ type Response struct {
 }
 
 func newResponse() Response {
-	return Response{Status: STATUS_OK}
+	return Response{Status: STATUS_OK, Headers: make(map[string]string)}
 }
 
 func (r Response) ToBytes() []byte {
@@ -27,6 +27,10 @@ func (r Response) ToBytes() []byte {
 	for k, v := range r.Headers {
 		h := fmt.Sprintf("%s%s%s", k, ":", v)
 		headers = fmt.Sprintf("%s%s%s", headers, CRLF, h)
+	}
+
+	if headers != "" {
+		headers = fmt.Sprintf("%s%s", headers, CRLF)
 	}
 
 	body := ""

@@ -54,6 +54,8 @@ func handleRouting(hc HttpConnection) {
 		matches := pattern.FindStringSubmatch(path)
 		if len(matches) == 2 {
 			hc.res.Body = matches[1]
+			hc.res.Headers["Content-Type"] = "text/plain"
+			hc.res.Headers["Content-Length"] = fmt.Sprint(len(matches[1]))
 			hc.Respond()
 			return
 		}
