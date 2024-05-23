@@ -115,7 +115,11 @@ func readFile(filePath string) (string, error) {
 	scanner := bufio.NewScanner(file)
 	fileContent := ""
 	for scanner.Scan() {
-		fileContent = fmt.Sprintf("%s%s%s", fileContent, "\n", scanner.Text())
+		if fileContent == "" {
+			fileContent = scanner.Text()
+		} else {
+			fileContent = fmt.Sprintf("%s%s%s", fileContent, "\n", scanner.Text())
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return "", err
