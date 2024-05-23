@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -16,6 +18,8 @@ func serve() {
 	if err != nil {
 		panic("Failed to bind to port 4221")
 	}
+
+	config := newConfig()
 
 	for {
 		conn, err := l.Accept()
@@ -34,6 +38,7 @@ func serve() {
 			}
 
 			hc := newHttpConnection(conn, req)
+			hc.config = config
 			handleRouting(hc)
 		}()
 	}
@@ -74,8 +79,47 @@ func handleRouting(hc HttpConnection) {
 			return
 		}
 
+		pattern = regexp.MustCompile(`/files/([^/]+)`)
+		matches = pattern.FindStringSubmatch(path)
+		if len(matches) == 2 {
+			filePath := hc.config.DirectoryFlag + "/" + matches[1]
+			fileContent, err := readFile(filePath)
+			if err != nil {
+				hc.res.Status = STATUS_NOT_FOUND
+				hc.Respond()
+				return
+			}
+
+			hc.res.Body = fileContent
+
+			// set headers and respond
+			hc.res.Headers["Content-Type"] = "application/octet-stream"
+			hc.res.Headers["Content-Length"] = fmt.Sprint(len(fileContent))
+			hc.Respond()
+			return
+		}
+
 	}
 
 	hc.res.Status = STATUS_NOT_FOUND
 	hc.Respond()
+}
+
+func readFile(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	fileContent := ""
+	for scanner.Scan() {
+		fileContent = fmt.Sprintf("%s%s%s", fileContent, "\n", scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return string(fileContent), nil
 }

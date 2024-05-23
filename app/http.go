@@ -1,14 +1,26 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 )
+
+type Config struct {
+	DirectoryFlag string
+}
+
+func newConfig() Config {
+	directory := flag.String("directory", "", "Directory path")
+	flag.Parse()
+	return Config{DirectoryFlag: *directory}
+}
 
 type HttpConnection struct {
 	tcpConn net.Conn
 	req     Request
 	res     Response
+	config  Config
 }
 
 func newHttpConnection(conn net.Conn, req Request) HttpConnection {
