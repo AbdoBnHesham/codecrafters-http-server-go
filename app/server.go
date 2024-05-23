@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strings"
 )
 
 func main() {
@@ -46,6 +47,19 @@ func handleRouting(hc HttpConnection) {
 	if method == "GET" {
 
 		if path == "/" {
+			hc.Respond()
+			return
+		}
+
+		if path == "/user-agent" {
+			for k, v := range hc.req.Headers {
+				if strings.ToLower(k) == "user-agent" {
+					hc.res.Body = v
+					// TODO: automate this
+					hc.res.Headers["Content-Type"] = "text/plain"
+					hc.res.Headers["Content-Length"] = fmt.Sprint(len(v))
+				}
+			}
 			hc.Respond()
 			return
 		}
