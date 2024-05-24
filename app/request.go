@@ -16,12 +16,13 @@ type Request struct {
 
 func ParseRequest(reader io.Reader) (Request, error) {
 	buffer := make([]byte, 1024)
-	_, err := reader.Read(buffer)
+	n, err := reader.Read(buffer)
 	if err != nil {
 		return Request{}, fmt.Errorf("error reading response: %v", err.Error())
 	}
+	data := buffer[:n]
 
-	request := string(buffer)
+	request := string(data)
 	sections := strings.Split(request, CRLF+CRLF)
 	reqAndHeaders := strings.Split(sections[0], CRLF)
 

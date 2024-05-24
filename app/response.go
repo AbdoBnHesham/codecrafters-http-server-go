@@ -5,6 +5,7 @@ import "fmt"
 const (
 	HTTP_VERSION                 = "HTTP/1.1"
 	STATUS_OK                    = "200 OK"
+	STATUS_CREATED               = "201 Created"
 	STATUS_NOT_FOUND             = "404 Not Found"
 	STATUS_INTERNAL_SERVER_ERROR = "500 Internal Server Error"
 	CRLF                         = "\r\n"

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -101,29 +100,54 @@ func handleRouting(hc HttpConnection) {
 
 	}
 
+	if method == "POST" {
+		pattern := regexp.MustCompile(`/files/([^/]+)`)
+		matches := pattern.FindStringSubmatch(path)
+		if len(matches) == 2 {
+			filePath := hc.config.DirectoryFlag + "/" + matches[1]
+			fileContent := hc.req.Body
+
+			err := writeFile(filePath, fileContent)
+			if err != nil {
+				hc.res.Status = STATUS_INTERNAL_SERVER_ERROR
+				hc.Respond()
+				return
+			}
+
+			// set headers and respond
+			hc.res.Status = STATUS_CREATED
+			hc.Respond()
+			return
+		}
+	}
+
 	hc.res.Status = STATUS_NOT_FOUND
 	hc.Respond()
 }
 
+// TODO: Research about this more
 func readFile(filePath string) (string, error) {
-	file, err := os.Open(filePath)
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	fileContent := ""
-	for scanner.Scan() {
-		if fileContent == "" {
-			fileContent = scanner.Text()
-		} else {
-			fileContent = fmt.Sprintf("%s%s%s", fileContent, "\n", scanner.Text())
-		}
-	}
-	if err := scanner.Err(); err != nil {
+	buffer := make([]byte, 1024)
+	n, err := file.Read(buffer)
+	if err != nil {
 		return "", err
 	}
+	data := buffer[:n]
 
-	return string(fileContent), nil
+	return string(data), nil
+}
+
+func writeFile(filePath, content string) error {
+	err := os.WriteFile(filePath, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
