@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net"
 	"os"
@@ -71,19 +73,22 @@ func handleRouting(hc HttpConnection) {
 		pattern := regexp.MustCompile(`/echo/([^/]+)`)
 		matches := pattern.FindStringSubmatch(path)
 		if len(matches) == 2 {
+			body := matches[1]
+			clength := len(matches[1])
 
 			for k, v := range hc.req.Headers {
 				if strings.ToLower(k) == "accept-encoding" {
 					pattern := regexp.MustCompile(`gzip`)
 					if pattern.MatchString(v) {
 						hc.res.Headers["Content-Encoding"] = "gzip"
+						body, clength = compressString(matches[1])
 					}
 				}
 			}
 
-			hc.res.Body = matches[1]
+			hc.res.Body = body
 			hc.res.Headers["Content-Type"] = "text/plain"
-			hc.res.Headers["Content-Length"] = fmt.Sprint(len(matches[1]))
+			hc.res.Headers["Content-Length"] = fmt.Sprint(clength)
 			hc.Respond()
 			return
 		}
@@ -160,4 +165,14 @@ func writeFile(filePath, content string) error {
 	}
 
 	return nil
+}
+
+func compressString(input string) (string, int) {
+	var buf bytes.Buffer
+
+	gz := gzip.NewWriter(&buf)
+	gz.Write([]byte(input))
+	gz.Close()
+
+	return buf.String(), buf.Len()
 }
