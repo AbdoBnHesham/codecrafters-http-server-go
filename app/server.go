@@ -71,6 +71,15 @@ func handleRouting(hc HttpConnection) {
 		pattern := regexp.MustCompile(`/echo/([^/]+)`)
 		matches := pattern.FindStringSubmatch(path)
 		if len(matches) == 2 {
+
+			for k, v := range hc.req.Headers {
+				if strings.ToLower(k) == "accept-encoding" {
+					if v == "gzip" {
+						hc.res.Headers["Content-Encoding"] = "gzip"
+					}
+				}
+			}
+
 			hc.res.Body = matches[1]
 			hc.res.Headers["Content-Type"] = "text/plain"
 			hc.res.Headers["Content-Length"] = fmt.Sprint(len(matches[1]))
