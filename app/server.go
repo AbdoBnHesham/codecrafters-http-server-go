@@ -74,7 +74,8 @@ func handleRouting(hc HttpConnection) {
 
 			for k, v := range hc.req.Headers {
 				if strings.ToLower(k) == "accept-encoding" {
-					if v == "gzip" {
+					pattern := regexp.MustCompile(`gzip`)
+					if pattern.MatchString(v) {
 						hc.res.Headers["Content-Encoding"] = "gzip"
 					}
 				}
